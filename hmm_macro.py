@@ -8,7 +8,16 @@ def hmm_macro_score(returns, macro_df, n_states=3):
     Compute probability that the ETF is in the best regime (highest mean return)
     using macro variables to predict the regime.
     """
-    if len(returns) < 20 or macro_df is None or len(macro_df) < 20:
+    # Convert to numpy and clean NaNs
+    returns = np.asarray(returns).flatten()
+    macro_df = macro_df.copy()
+    # Remove rows where any NaN in returns or macro
+    mask = ~np.isnan(returns)
+    if mask.sum() < 10:
+        return 0.0
+    returns = returns[mask]
+    macro_df = macro_df.iloc[mask]
+    if len(returns) < 20:
         return 0.0
     # Standardise macro
     scaler = StandardScaler()
@@ -22,13 +31,13 @@ def hmm_macro_score(returns, macro_df, n_states=3):
     # Train logistic regression to predict regime from macro
     X = macro_scaled
     y = states
-    # Remove any rows with NaN (should not happen)
-    valid = ~np.isnan(y) & ~np.isnan(X).any(axis=1)
+    # Remove any rows with NaN in X (should not be any)
+    valid = ~np.isnan(X).any(axis=1)
     X = X[valid]
     y = y[valid]
     if len(y) < 10:
         return 0.0
-    log_reg = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=100)
+    log_reg = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=200)
     log_reg.fit(X, y)
     # Predict probability of best state for the last macro observation
     last_macro = macro_scaled[-1].reshape(1, -1)
