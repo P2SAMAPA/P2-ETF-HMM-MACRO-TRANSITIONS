@@ -6,7 +6,7 @@ import pandas as pd
 from huggingface_hub import HfApi
 import config
 import data_manager as dm
-from hmm_macro import HMMMacro
+from hmm_macro import hmm_macro_score  # changed import
 
 def normalize_scores(score_dict):
     scores = np.array(list(score_dict.values()))
@@ -31,12 +31,9 @@ def run_for_window(returns, macro_df, window_days):
         return None
     raw_scores = {}
     for ticker in ret_window.columns:
-        model = HMMMacro(n_states=config.N_STATES, max_iter=config.MAX_ITER)
-        try:
-            model.fit(ret_window[ticker].values, macro_window)
-            prob = model.score(ret_window[ticker].values, macro_window)
-        except Exception as e:
-            print(f"    Error fitting {ticker}: {e}")
+        # Use the new function
+        prob = hmm_macro_score(ret_window[ticker].values, macro_window, n_states=config.N_STATES)
+        if not np.isfinite(prob):
             prob = 0.0
         raw_scores[ticker] = float(prob)
     norm_scores = normalize_scores(raw_scores)
@@ -60,7 +57,6 @@ def main():
         "run_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "windows": config.WINDOWS,
         "n_states": config.N_STATES,
-        "max_iter": config.MAX_ITER,
         "universes": {}
     }
     for uni_name in config.UNIVERSES.keys():
