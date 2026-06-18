@@ -2,7 +2,7 @@ name: Daily HMM Macro Training
 
 on:
   schedule:
-    - cron: '20 04 * * *'
+    - cron: '20 02 * * *'
   workflow_dispatch:
 
 jobs:
